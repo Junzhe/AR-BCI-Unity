@@ -13,6 +13,7 @@ public class ImageTrackingManager : MonoBehaviour
     private List<string> knownTargets = new List<string> { "A", "B" }; // 可扩展更多二维码名
     private string currentTargetName = null;
     private string confirmedTargetName = null;
+        //123
 
     void OnEnable() => trackedImageManager.trackedImagesChanged += OnTrackedImagesChanged;
     void OnDisable() => trackedImageManager.trackedImagesChanged -= OnTrackedImagesChanged;
