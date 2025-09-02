@@ -7,16 +7,32 @@ public class TargetCube : MonoBehaviour
     public GameObject cube;
     public InteractiveSelect indicator;
     public Renderer cubeRender;
+    private Vector3 dir; // this direction is the direction which the cube wobbs
+    private float t;
+    int testdir; // debug variable
 
     // Start is called before the first frame update
     void Start()
     {
+        dir = Vector3.zero;
+        testdir = 0; // debug
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 1f) + 1f) / 2f; // oscillates
+        // cube.transform.localPosition = dir * 0.08f * t; //actuall line
+        cube.transform.localPosition = testdir * Vector3.left * 0.08f * t; //debug line
+        debug();
+    }
+
+    void debug()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            testdir = Random.Range(-1, 2);
+        }
     }
 
     public void ChangeColor(Color color)
@@ -40,7 +56,13 @@ public class TargetCube : MonoBehaviour
         // works better when one cube might be put further away from the other cubes
         // instead of making the whole gameobject move, only the cube will move, which is a son of this gameobject
         // this is so that the gameobject can always stay in the relative same position.
-        Vector3 norm = Vector3.Normalize(targetCube - transform.position); 
+        dir = Vector3.Normalize(targetCube - transform.position); 
+    }
+
+    public void StopWobbing()
+    {
+        dir = Vector3.zero;
+        cube.transform.localPosition = Vector3.zero;
     }
 
     public void TextSelected(bool isConfirmed)
@@ -63,18 +85,5 @@ public class TargetCube : MonoBehaviour
     public bool TextExist()
     {
         return indicator != null;
-    }
-
-    IEnumerator Bobbing(Vector3 dir)
-    {
-        Vector3 startPos = cube.transform.localPosition;
-        float cycle = 2.5f;
-
-        while (true)
-        {
-            float t = (Mathf.Sin(Time.time * Mathf.PI * 2f / cycle) + 1f) / 2f; // oscillates
-            cube.transform.localPosition = startPos + dir * 0.08f * t;
-            yield return null;
-        }
     }
 }

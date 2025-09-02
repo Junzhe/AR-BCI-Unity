@@ -43,7 +43,7 @@ public class InteractiveSelect : MonoBehaviour
         //Debug
         initialPos = transform.position;
         nextPos = transform.position + Vector3.left;
-        startPos = turnObj.transform.localPosition;
+        startPos = Vector3.zero;
 
     }
 
