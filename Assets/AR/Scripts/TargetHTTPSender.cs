@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using UnityEngine.Networking;
 
@@ -8,77 +9,51 @@ public class TargetHTTPSender : MonoBehaviour
     public string raspberryPiIP = "172.20.10.9";  // 树莓派 IP
     public int port = 5000;
 
-    private string confirmedTargetName = null;
-    private Coroutine repeatCoroutine;
-
-    // ✅ 添加的 Start 方法用于日志测试
-    void Start()
-    {
-        Debug.Log("✅ Unity 日志输出测试：TargetHTTPSender Start() 被调用");
-    }
-
     /// <summary>
-    /// 外部调用开始发送
+    /// 一次性发送目标编号，返回服务器响应文本 (OK/FAIL/BUSY/ERROR)
     /// </summary>
-    public void StartSending(string targetName)
+    public IEnumerator SendOnce(string targetName, Action<bool, string> onDone = null)
     {
-        confirmedTargetName = targetName;
-
-        if (string.IsNullOrEmpty(confirmedTargetName))
+        if (string.IsNullOrEmpty(targetName))
         {
-            Debug.LogWarning("⚠️ 未提供目标编号，无法发送！");
-            return;
+            onDone?.Invoke(false, "INVALID_TARGET");
+            yield break;
         }
 
-        Debug.Log($"📤 开始发送目标编号：{confirmedTargetName}");
+        string url = $"http://{raspberryPiIP}:{port}/target";
+        WWWForm form = new WWWForm();
+        form.AddField("target", targetName);
+        // 加一个 request_id，避免重复
+        form.AddField("request_id", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 
-        if (repeatCoroutine != null)
-            StopCoroutine(repeatCoroutine);
-
-        repeatCoroutine = StartCoroutine(SendTargetPeriodically());
-    }
-
-    /// <summary>
-    /// 停止发送
-    /// </summary>
-    public void StopSending()
-    {
-        Debug.Log("🛑 停止发送目标编号");
-        if (repeatCoroutine != null)
+        using (UnityWebRequest www = UnityWebRequest.Post(url, form))
         {
-            StopCoroutine(repeatCoroutine);
-            repeatCoroutine = null;
-        }
-    }
+            www.timeout = 8; // 超时时间
+            yield return www.SendWebRequest();
 
-    /// <summary>
-    /// 每秒发送一次编号到 HTTP 接口
-    /// </summary>
-    IEnumerator SendTargetPeriodically()
-    {
-        while (!string.IsNullOrEmpty(confirmedTargetName))
-        {
-            string url = $"http://{raspberryPiIP}:{port}/target";
-            WWWForm form = new WWWForm();
-            form.AddField("target", confirmedTargetName);
-
-            Debug.Log($"🌐 正在向 {url} 发送编号 {confirmedTargetName}");
-
-            using (UnityWebRequest www = UnityWebRequest.Post(url, form))
+            if (www.result != UnityWebRequest.Result.Success)
             {
-                yield return www.SendWebRequest();
-
-                if (www.result == UnityWebRequest.Result.Success)
-                {
-                    Debug.Log($"✅ 成功发送目标编号：{confirmedTargetName}");
-                }
-                else
-                {
-                    Debug.LogWarning($"❌ HTTP 请求失败：{www.error}");
-                }
+                onDone?.Invoke(false, $"NETWORK_ERROR: {www.error}");
             }
+            else
+            {
+                // 读取服务器返回的纯文本：OK / FAIL / BUSY / ERROR
+                string resp = (www.downloadHandler?.text ?? "").Trim();
 
-            yield return new WaitForSeconds(1.0f);
+                // HTTP 状态码
+                int code = (int)www.responseCode;
+
+                if (code == 200 && resp == "OK")
+                    onDone?.Invoke(true, "OK");
+                else if (resp == "FAIL")
+                    onDone?.Invoke(false, "FAIL");
+                else if (resp == "BUSY")
+                    onDone?.Invoke(false, "BUSY");
+                else if (resp == "ERROR")
+                    onDone?.Invoke(false, "ERROR");
+                else
+                    onDone?.Invoke(false, $"UNKNOWN:{resp}");
+            }
         }
     }
 }

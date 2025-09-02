@@ -1,33 +1,83 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 
 public class QRCodeSpawner : MonoBehaviour
 {
-    public ARSessionOrigin sessionOrigin;
-    public ARQRCodeManager qrCodeManager;
-    public GameObject spawnPrefab;
+    [Header("AR 管理器")]
+    public ARTrackedImageManager trackedImageManager;
 
-    bool spawned = false;
+    [Header("交互物块 Prefab")]
+    public GameObject targetPrefab;
+
+    // 存储二维码名字 -> 生成物块
+    private Dictionary<string, GameObject> spawnedTargets = new Dictionary<string, GameObject>();
 
     void OnEnable()
     {
-        if (qrCodeManager != null)
-            qrCodeManager.OnQRCodeDetected += HandleQRCode;
+        if (trackedImageManager != null)
+            trackedImageManager.trackedImagesChanged += OnTrackedImagesChanged;
     }
 
     void OnDisable()
     {
-        if (qrCodeManager != null)
-            qrCodeManager.OnQRCodeDetected -= HandleQRCode;
+        if (trackedImageManager != null)
+            trackedImageManager.trackedImagesChanged -= OnTrackedImagesChanged;
     }
 
-    void HandleQRCode(string code, Vector2 pos)
+    private void OnTrackedImagesChanged(ARTrackedImagesChangedEventArgs eventArgs)
     {
-        if (spawned) return; // 只生成一次
-        spawned = true;
-        // 在摄像机前方 0.5 米生成
-        Vector3 spawnPos = sessionOrigin.camera.transform.position + sessionOrigin.camera.transform.forward * 0.5f;
-        Instantiate(spawnPrefab, spawnPos, Quaternion.identity);
-        Debug.Log("根据二维码生成了物体: " + code);
+        // 新识别到二维码
+        foreach (var trackedImage in eventArgs.added)
+        {
+            string name = trackedImage.referenceImage.name.ToUpper();
+            if (!spawnedTargets.ContainsKey(name))
+            {
+                // 实例化 prefab，作为二维码的子物体
+                var go = Instantiate(targetPrefab, trackedImage.transform);
+                go.name = $"Target-{name}";
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+                spawnedTargets[name] = go;
+
+                Debug.Log($"[QRCodeSpawner] Added target {name}");
+            }
+        }
+
+        // 已经识别的二维码 → 更新位置 / 旋转
+        foreach (var trackedImage in eventArgs.updated)
+        {
+            string name = trackedImage.referenceImage.name.ToUpper();
+            if (spawnedTargets.ContainsKey(name))
+            {
+                var go = spawnedTargets[name];
+
+                if (trackedImage.trackingState == UnityEngine.XR.ARSubsystems.TrackingState.Tracking)
+                {
+                    go.SetActive(true);
+                    go.transform.position = trackedImage.transform.position;
+                    go.transform.rotation = trackedImage.transform.rotation;
+                }
+                else
+                {
+                    // 丢失跟踪时隐藏
+                    go.SetActive(false);
+                }
+            }
+        }
+
+        // 丢失的二维码 → 删除或隐藏物块
+        foreach (var trackedImage in eventArgs.removed)
+        {
+            string name = trackedImage.referenceImage.name.ToUpper();
+            if (spawnedTargets.ContainsKey(name))
+            {
+                var go = spawnedTargets[name];
+                Destroy(go);
+                spawnedTargets.Remove(name);
+
+                Debug.Log($"[QRCodeSpawner] Removed target {name}");
+            }
+        }
     }
 }

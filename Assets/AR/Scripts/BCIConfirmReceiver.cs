@@ -1,81 +1,71 @@
 using UnityEngine;
-using UnityEngine.UI;
 using extOSC;
 
 public class BCIConfirmReceiver : MonoBehaviour
 {
-    [Header("OSC 配置")]
     public OSCReceiver receiver;
-    public string listenAddress = "/confirm";
-
-    [Header("目标管理器")]
+    public string confirmAddress = "/lift";
     public ImageTrackingManager imageTrackingManager;
 
-    [Header("HTTP 发射器")]
-    public TargetHTTPSender targetHttpSender;  // 需要挂载该组件
+    private float holdStart = 0f;
+    public float holdSeconds = 2f;
 
-    [Header("UI 提示组件")]
-    public Text statusText;
+    public float amplitude = 0.03f;
+    public float speed = 3f;
+    public float timeout = 3f;
 
-    private string confirmedTargetName = null;
+    private Vector3 basePos;
+    private float lastActiveTime = -999f;
+    private bool active = false;
 
     void Start()
     {
-        if (receiver != null)
-        {
-            receiver.Bind(listenAddress, OnConfirm);
-            Debug.Log($"✅ BCIConfirmReceiver: 已绑定 OSC 地址: {listenAddress}");
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ BCIConfirmReceiver: OSCReceiver 未绑定！");
-        }
+        if (!receiver) { Debug.LogError("❌ OSCReceiver 未设置！"); return; }
+        receiver.Bind(confirmAddress, m => Handle(m.Values[0].IntValue));
     }
 
-    void OnConfirm(OSCMessage message)
+    void Update()
     {
-        if (!message.ToFloat(out float value))
+        var current = imageTrackingManager?.GetCurrentTargetObject();
+        if (current == null) return;
+
+        if (basePos == Vector3.zero) basePos = current.transform.localPosition;
+
+        if (!active || Time.time - lastActiveTime > timeout)
         {
-            Debug.LogWarning("⚠️ OnConfirm: 无法解析 OSC 浮点值！");
+            current.transform.localPosition = basePos;
             return;
         }
 
-        Debug.Log($"BCIConfirmReceiver: 接收到 BCI 确认信号值：{value}");
+        float t = Mathf.Sin(Time.time * speed) * amplitude;
+        current.transform.localPosition = basePos + new Vector3(0, t, 0);
+    }
 
-        if (imageTrackingManager == null)
+    void Handle(int val)
+    {
+        var current = imageTrackingManager?.GetCurrentTargetObject();
+        if (current == null) return;
+
+        if (val == 1)
         {
-            Debug.LogWarning("⚠️ BCIConfirmReceiver: ImageTrackingManager 未设置！");
-            return;
+            active = true;
+            lastActiveTime = Time.time;
+
+            if (holdStart == 0f) holdStart = Time.time;
+            else if (Time.time - holdStart >= holdSeconds)
+            {
+                imageTrackingManager?.ConfirmCurrentTarget();
+                ResetFeedback();
+            }
         }
+        else ResetFeedback();
+    }
 
-        string name = imageTrackingManager.GetCurrentTargetName();
-        Debug.Log($"当前选中的目标编号为：{name}");
-
-        if (value > 0.5f)
-        {
-            imageTrackingManager.ConfirmCurrentTarget();
-            confirmedTargetName = name;
-
-            Debug.Log($"  TargetHTTPSender 开始发送目标编号：{confirmedTargetName}");
-            if (targetHttpSender != null)
-                targetHttpSender.StartSending(confirmedTargetName);
-            else
-                Debug.LogWarning("⚠️ BCIConfirmReceiver: TargetHTTPSender 未设置！");
-
-            if (statusText != null)
-                statusText.text = $"✅ 目标 {name} 已确认，准备抓取！";
-        }
-        else
-        {
-            imageTrackingManager.CancelCurrentTarget();
-            confirmedTargetName = null;
-
-            Debug.Log(" 调用 TargetHTTPSender 停止发送");
-            if (targetHttpSender != null)
-                targetHttpSender.StopSending();
-
-            if (statusText != null)
-                statusText.text = $"⛔ 目标 {name} 取消确认";
-        }
+    void ResetFeedback()
+    {
+        active = false;
+        holdStart = 0f;
+        var current = imageTrackingManager?.GetCurrentTargetObject();
+        if (current != null) current.transform.localPosition = basePos;
     }
 }

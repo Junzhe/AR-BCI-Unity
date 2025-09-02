@@ -10,10 +10,10 @@ public class ImageTrackingManager : MonoBehaviour
     public GameObject targetPrefab;
 
     private Dictionary<string, GameObject> spawnedTargets = new Dictionary<string, GameObject>();
-    private List<string> knownTargets = new List<string> { "A", "B" }; // 可扩展更多二维码名
+    private List<string> knownTargets = new List<string> { "A", "B", "C"  }; // 可扩展更多二维码名
     private string currentTargetName = null;
     private string confirmedTargetName = null;
-        //123
+    //123
 
     void OnEnable() => trackedImageManager.trackedImagesChanged += OnTrackedImagesChanged;
     void OnDisable() => trackedImageManager.trackedImagesChanged -= OnTrackedImagesChanged;
@@ -35,15 +35,19 @@ public class ImageTrackingManager : MonoBehaviour
 
         if (!spawnedTargets.ContainsKey(name))
         {
-            GameObject obj = Instantiate(targetPrefab, trackedImage.transform.position, trackedImage.transform.rotation);
+            // 改为直接放入tracked image之下，而不是映射坐标
+            GameObject obj = Instantiate(targetPrefab, trackedImage.transform);
             obj.name = name;
+            obj.transform.localPosition = Vector3.zero;
+            obj.transform.localRotation = Quaternion.identity;
             spawnedTargets[name] = obj;
+
             Debug.Log($"🆕 生成目标物：{name}");
         }
 
         GameObject go = spawnedTargets[name];
         go.SetActive(trackedImage.trackingState == TrackingState.Tracking);
-        go.transform.SetPositionAndRotation(trackedImage.transform.position, trackedImage.transform.rotation);
+        go.transform.localPosition = Vector3.zero;
 
         // 初始状态下不设为当前目标，避免未确认时高亮
         if (string.IsNullOrEmpty(currentTargetName) && trackedImage.trackingState == TrackingState.Tracking)
@@ -108,16 +112,23 @@ public class ImageTrackingManager : MonoBehaviour
     {
         if (obj == null) return;
 
+        InteractiveSelect statusText = obj.GetComponentInChildren<InteractiveSelect>();
         // 设置颜色
-        Renderer rend = obj.GetComponent<Renderer>();
+        Renderer rend = statusText.parentCube.GetComponent<Renderer>();
         if (rend != null)
         {
             if (isConfirmed)
+            {
                 rend.material.color = Color.green;
+            }
             else if (isCurrent)
+            {
                 rend.material.color = Color.yellow;
+            }
             else
+            {
                 rend.material.color = Color.white;
+            }
         }
 
         // 设置缩放
@@ -126,23 +137,31 @@ public class ImageTrackingManager : MonoBehaviour
         obj.transform.localScale = new Vector3(scale, scale, scale);
 
         // 查找 TextMeshPro 并设置状态文字
-        TextMeshPro statusText = obj.GetComponentInChildren<TextMeshPro>(true);
+        
         if (statusText != null)
         {
             if (isConfirmed)
-                statusText.text = "Move!";
-            else if (isCurrent)
-                statusText.text = "Target";
-            else
-                statusText.text = "";
-
-            // 始终朝向主摄像头
-            Camera mainCam = Camera.main;
-            if (mainCam != null)
             {
-                statusText.transform.LookAt(mainCam.transform);
-                statusText.transform.Rotate(0, 180, 0); // 使文字正对用户
+                // 字符不再晃动
+                statusText.Follow(true, true);
+            }
+            else if (isCurrent)
+            {
+                // 字符上下晃动
+                statusText.Follow(true);
+            }
+            else
+            {
+                // 字符消失，不显示
+                statusText.NoTarget();
             }
         }
+    }
+
+    public GameObject GetCurrentTargetObject()
+    {
+        if (!string.IsNullOrEmpty(currentTargetName) && spawnedTargets.ContainsKey(currentTargetName))
+            return spawnedTargets[currentTargetName];
+        return null;
     }
 }
