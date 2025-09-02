@@ -48,6 +48,7 @@ public class ImageTrackingManager : MonoBehaviour
         GameObject go = spawnedTargets[name];
         go.SetActive(trackedImage.trackingState == TrackingState.Tracking);
         go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
 
         // 初始状态下不设为当前目标，避免未确认时高亮
         if (string.IsNullOrEmpty(currentTargetName) && trackedImage.trackingState == TrackingState.Tracking)

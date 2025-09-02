@@ -22,8 +22,7 @@ public class TargetCube : MonoBehaviour
     void Update()
     {
         t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 0.8f) + 1f) / 2f; // oscillates
-        // cube.transform.localPosition = dir * 0.08f * t; //actuall line
-        cube.transform.localPosition = testdir * Vector3.left * 0.15f * t; //debug line
+        cube.transform.localPosition = dir * 0.15f * t; //actuall line
         debug();
     }
 
@@ -51,6 +50,7 @@ public class TargetCube : MonoBehaviour
 
     public void StartWobbing(Vector3 targetCube)
     {
+        // 当开始收到切换的信号时，引用这个函数，可以持续引用，targetcube为下一个要切换的对象的position
         // passed in the target cube which is the cube that's supposed to be the next target.
         // this is so that the wobbing direction is not set to only "left and right" but also takes in account of the vertical displacement
         // works better when one cube might be put further away from the other cubes
@@ -61,6 +61,8 @@ public class TargetCube : MonoBehaviour
 
     public void StopWobbing()
     {
+        // 当切换的信号持续不足一段时间，导致要取消的时候，引用这个函数，停止方块的摆动
+        // 当切换的信号持续了一段时间，完成了切换时，也引用这个函数，停止方块的摆动
         dir = Vector3.zero;
         cube.transform.localPosition = Vector3.zero;
     }
