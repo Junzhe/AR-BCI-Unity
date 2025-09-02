@@ -21,9 +21,9 @@ public class TargetCube : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 1f) + 1f) / 2f; // oscillates
+        t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 0.8f) + 1f) / 2f; // oscillates
         // cube.transform.localPosition = dir * 0.08f * t; //actuall line
-        cube.transform.localPosition = testdir * Vector3.left * 0.08f * t; //debug line
+        cube.transform.localPosition = testdir * Vector3.left * 0.15f * t; //debug line
         debug();
     }
 

@@ -205,19 +205,19 @@ public class InteractiveSelect : MonoBehaviour
     {
         // When one item is selected, the indicator bobs up and down
         
-        float cycle = 2.5f;
+        float cycle = 2f;
 
         while (true)
         {
             if (currentState == State.Selected)
             {
                 float t = (Mathf.Sin(Time.time * Mathf.PI * 2f / cycle) + 1f) / 2f; // oscillates
-                turnObj.transform.localPosition = startPos + Vector3.up * 0.1f * t;
+                turnObj.transform.localPosition = startPos + Vector3.up * 0.08f * t;
             }
             if (currentState == State.Confirmed)
             {
                 float t = (Mathf.Sin(Time.time * Mathf.PI * 2f / (cycle / 2f)) + 1f) / 2f; // oscillates
-                turnObj.transform.localPosition = startPos + Vector3.up * 0.03f * t;
+                turnObj.transform.localPosition = startPos + Vector3.up * 0.02f * t;
             }
             yield return null;
         }
