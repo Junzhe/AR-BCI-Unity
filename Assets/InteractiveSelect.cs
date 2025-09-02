@@ -19,6 +19,7 @@ public class InteractiveSelect : MonoBehaviour
     // debug
     private Vector3 initialPos;
     private Vector3 nextPos;
+    private Vector3 startPos;
 
     // have 4 different states
     private enum State
@@ -42,6 +43,7 @@ public class InteractiveSelect : MonoBehaviour
         //Debug
         initialPos = transform.position;
         nextPos = transform.position + Vector3.left;
+        startPos = turnObj.transform.localPosition;
 
     }
 
@@ -202,7 +204,7 @@ public class InteractiveSelect : MonoBehaviour
     IEnumerator Bobbing()
     {
         // When one item is selected, the indicator bobs up and down
-        Vector3 startPos = turnObj.transform.localPosition;
+        
         float cycle = 2.5f;
 
         while (true)
@@ -210,12 +212,12 @@ public class InteractiveSelect : MonoBehaviour
             if (currentState == State.Selected)
             {
                 float t = (Mathf.Sin(Time.time * Mathf.PI * 2f / cycle) + 1f) / 2f; // oscillates
-                turnObj.transform.localPosition = startPos + Vector3.up * 0.15f * t;
+                turnObj.transform.localPosition = startPos + Vector3.up * 0.1f * t;
             }
             if (currentState == State.Confirmed)
             {
                 float t = (Mathf.Sin(Time.time * Mathf.PI * 2f / (cycle / 2f)) + 1f) / 2f; // oscillates
-                turnObj.transform.localPosition = startPos + Vector3.up * 0.05f * t;
+                turnObj.transform.localPosition = startPos + Vector3.up * 0.03f * t;
             }
             yield return null;
         }

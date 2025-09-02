@@ -112,48 +112,44 @@ public class ImageTrackingManager : MonoBehaviour
     {
         if (obj == null) return;
 
-        InteractiveSelect statusText = obj.GetComponentInChildren<InteractiveSelect>();
+        TargetCube cube = obj.GetComponent<TargetCube>();
         // 设置颜色
-        Renderer rend = statusText.parentCube.GetComponent<Renderer>();
-        if (rend != null)
+        if (cube != null)
         {
             if (isConfirmed)
             {
-                rend.material.color = Color.green;
+                cube.ChangeColor(Color.green);
             }
             else if (isCurrent)
             {
-                rend.material.color = Color.yellow;
+                cube.ChangeColor(Color.yellow);
             }
             else
             {
-                rend.material.color = Color.white;
+                cube.ChangeColor(Color.white);
             }
         }
 
         // 设置缩放
-        float baseScale = 0.06f;
-        float scale = isCurrent ? baseScale * 1.2f : baseScale;
-        obj.transform.localScale = new Vector3(scale, scale, scale);
+        cube.ChangeSize(isCurrent || isConfirmed);
 
-        // 查找 TextMeshPro 并设置状态文字
-        
-        if (statusText != null)
+        // chaneg the text based on the state of the cubes.
+        if (cube.TextExist())
         {
             if (isConfirmed)
             {
                 // 字符不再晃动
-                statusText.Follow(true, true);
+                cube.TextSelected(true);
             }
             else if (isCurrent)
             {
                 // 字符上下晃动
-                statusText.Follow(true);
+                cube.TextSelected(false);
             }
             else
             {
                 // 字符消失，不显示
-                statusText.NoTarget();
+                cube.TextDeselected();
             }
         }
     }
