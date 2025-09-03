@@ -13,7 +13,7 @@ public class BCISwitchReceiver : MonoBehaviour
     public ImageTrackingManager imageManager;
 
     [Header("参数")]
-    public float holdSeconds = 5f;   // 需要持续时间
+    private float holdSeconds = 5.0f;   // 需要持续时间
 
     private enum Direction { None, Left, Right }
     private Direction currentDir = Direction.None;
@@ -59,6 +59,7 @@ public class BCISwitchReceiver : MonoBehaviour
     void OnCancel(OSCMessage message)
     {
         // cancel the switch, whether the switch happened or the switch stopped mid way, return the state to its initial state
+        Debug.Log("持续需要中断");
         ResetFeedback();
     }
 
@@ -95,12 +96,17 @@ public class BCISwitchReceiver : MonoBehaviour
                 ResetFeedback();
             }
         }
+        else
+        {
+            // meaning we should stop the count.
+            holdStart = Time.time;
+        }
     }
 
     void ResetFeedback()
     {
-        imageManager?.CancelSwitchTarget();
         held = false;
         currentDir = Direction.None;
+        imageManager?.CancelSwitchTarget();
     }
 }
