@@ -9,29 +9,24 @@ public class TargetCube : MonoBehaviour
     public Renderer cubeRender;
     private Vector3 dir; // this direction is the direction which the cube wobbs
     private float t;
-    int testdir; // debug variable
+    int intdir; // debug variable
+    Camera cam;
 
     // Start is called before the first frame update
     void Start()
     {
         dir = Vector3.zero;
-        testdir = 0; // debug
+        intdir = 0; // debug
+        cam = Camera.main;
     }
 
     // Update is called once per frame
     void Update()
     {
-        t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 0.8f) + 1f) / 2f; // oscillates
-        cube.transform.localPosition = dir * 0.15f * t; //actuall line
-        debug();
-    }
-
-    void debug()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            testdir = Random.Range(-1, 2);
-        }
+        t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 0.8f) + 1f) / 1.5f; // oscillates
+        //cube.transform.localPosition = dir * 0.15f * t;
+        cube.transform.localPosition = intdir * Vector3.right * 0.15f * t; //debug line
+        //debug();
     }
 
     public void ChangeColor(Color color)
@@ -59,12 +54,29 @@ public class TargetCube : MonoBehaviour
         dir = Vector3.Normalize(targetCube - transform.position); 
     }
 
+    public void StartWobbing(bool isRightDir)
+    {
+        // wobbing的纯方向性版本重载
+        if (isRightDir)
+        {
+            //dir = Vector3.Normalize(-cam.transform.right);
+            intdir = 1;
+        }
+        else
+        {
+            //dir = Vector3.Normalize(cam.transform.right);
+            intdir = -1;
+        }
+        
+    }
+
     public void StopWobbing()
     {
         // 当切换的信号持续不足一段时间，导致要取消的时候，引用这个函数，停止方块的摆动
         // 当切换的信号持续了一段时间，完成了切换时，也引用这个函数，停止方块的摆动
         dir = Vector3.zero;
-        cube.transform.localPosition = Vector3.zero;
+        //cube.transform.localPosition = Vector3.zero;
+        intdir = 0;
     }
 
     public void TextSelected(bool isConfirmed)

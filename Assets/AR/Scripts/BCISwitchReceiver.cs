@@ -3,83 +3,104 @@ using extOSC;
 
 public class BCISwitchReceiver : MonoBehaviour
 {
+    [Header("OSC 设置")]
     public OSCReceiver receiver;
     public string leftAddress = "/left";
     public string rightAddress = "/right";
     public string neutralAddress = "/neutral";
+
+    [Header("引用")]
     public ImageTrackingManager imageManager;
+
+    [Header("参数")]
+    public float holdSeconds = 5f;   // 需要持续时间
 
     private enum Direction { None, Left, Right }
     private Direction currentDir = Direction.None;
 
     private float holdStart = 0f;
-    public float holdSeconds = 2f; // 持续阈值
-    public float amplitude = 0.03f;
-    public float speed = 3f;
-    public float timeout = 3f;
-
-    private Vector3 basePos;
+    private bool held = false;
     private float lastActiveTime = -999f;
+    private Vector3 basePos;
 
     void Start()
     {
-        if (!receiver) { Debug.LogError("❌ OSCReceiver 未设置！"); return; }
-        receiver.Bind(leftAddress, m => Handle(Direction.Left, m.Values[0].IntValue));
-        receiver.Bind(rightAddress, m => Handle(Direction.Right, m.Values[0].IntValue));
-        if (!string.IsNullOrEmpty(neutralAddress))
-            receiver.Bind(neutralAddress, m => ResetFeedback());
+        if (receiver != null)
+        {
+            receiver.Bind(leftAddress, OnLeft);
+            receiver.Bind(rightAddress, OnRight);
+            receiver.Bind(neutralAddress, OnCancel);
+        }
+        else
+        {
+            Debug.LogError("❌ OSCReceiver 未设置！");
+        }
     }
 
     void Update()
     {
+        Handle(currentDir);
+    }
+
+    void OnLeft(OSCMessage message)
+    {
+        // switch to the block on the left
+        currentDir = Direction.Left;
+        Handle(currentDir);
+    }
+
+    void OnRight(OSCMessage message)
+    {
+        // switch to the block on the right
+        currentDir = Direction.Right;
+        Handle(currentDir);
+    }
+
+    void OnCancel(OSCMessage message)
+    {
+        // cancel the switch, whether the switch happened or the switch stopped mid way, return the state to its initial state
+        ResetFeedback();
+    }
+
+    void Handle(Direction dir)
+    {
         var current = imageManager?.GetCurrentTargetObject();
-        if (current == null) return;
-
-        if (basePos == Vector3.zero) basePos = current.transform.localPosition;
-
-        if (Time.time - lastActiveTime > timeout || currentDir == Direction.None)
+        if (current == null)
         {
-            current.transform.localPosition = basePos;
+            // lost the block somehow
+            //ResetFeedback();
+            currentDir = Direction.None;
+            held = false;
             return;
         }
 
-        float t = Mathf.Sin(Time.time * speed) * amplitude;
-        Vector3 offset = Vector3.zero;
-
-        switch (currentDir)
+        if (currentDir != Direction.None)
         {
-            case Direction.Left: offset = new Vector3(-t, 0, 0); break;
-            case Direction.Right: offset = new Vector3(t, 0, 0); break;
-        }
-
-        current.transform.localPosition = basePos + offset;
-    }
-
-    void Handle(Direction dir, int val)
-    {
-        var current = imageManager?.GetCurrentTargetObject();
-        if (current == null) return;
-
-        if (val == 1)
-        {
-            currentDir = dir;
-            lastActiveTime = Time.time;
-
-            if (holdStart == 0f) holdStart = Time.time;
+            Debug.LogWarning("A Request is recieved and is being handled");
+            // if we have a direction
+            imageManager?.PrepareSwitchTarget(dir == Direction.Right);
+            if (!held)
+            {
+                held = true;
+                // record current time
+                holdStart = Time.time;
+            }
             else if (Time.time - holdStart >= holdSeconds)
             {
+                Debug.Log($"持续 {holdSeconds}s → 切换 {dir}");
+                // make the switch
                 imageManager?.SwitchTarget(dir == Direction.Right);
+                // already made the one-time switch, "re-initialize" everything.
+                held = false;
                 ResetFeedback();
             }
         }
-        else ResetFeedback();
     }
 
     void ResetFeedback()
     {
+        imageManager?.CancelSwitchTarget();
+        held = false;
         currentDir = Direction.None;
-        holdStart = 0f;
-        var current = imageManager?.GetCurrentTargetObject();
-        if (current != null) current.transform.localPosition = basePos;
     }
 }

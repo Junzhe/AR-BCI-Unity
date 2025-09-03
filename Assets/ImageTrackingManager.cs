@@ -59,10 +59,36 @@ public class ImageTrackingManager : MonoBehaviour
         HighlightTargets();
     }
 
+    public void PrepareSwitchTarget(bool toRight)
+    {
+        // first get the proper index
+        if (spawnedTargets.Count == 0) return;
+        try
+        {
+            TargetCube currentObj = GetCurrentTargetObject().GetComponent<TargetCube>();
+
+            currentObj.StartWobbing(toRight);
+        }
+        catch { }
+    }
+
+    public void CancelSwitchTarget()
+    {
+        if (spawnedTargets.Count == 0) return;
+        try
+        {
+            TargetCube currentObj = GetCurrentTargetObject().GetComponent<TargetCube>();
+
+            currentObj.StopWobbing();
+        }
+        catch { }
+
+    }
+
     public void SwitchTarget(bool toRight)
     {
         if (spawnedTargets.Count == 0) return;
-
+        CancelSwitchTarget();
         List<string> available = new List<string>(spawnedTargets.Keys);
         available.Sort();
 
@@ -73,7 +99,6 @@ public class ImageTrackingManager : MonoBehaviour
 
         currentTargetName = available[index];
         Debug.Log($"🔁 切换目标为：{currentTargetName}");
-
         HighlightTargets();
     }
 
@@ -158,7 +183,11 @@ public class ImageTrackingManager : MonoBehaviour
     public GameObject GetCurrentTargetObject()
     {
         if (!string.IsNullOrEmpty(currentTargetName) && spawnedTargets.ContainsKey(currentTargetName))
+        {
+            Debug.Log("The current target object is: " + currentTargetName);
             return spawnedTargets[currentTargetName];
+        }
+        Debug.LogError("Can not get the current target object");
         return null;
     }
 }

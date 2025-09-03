@@ -67,7 +67,6 @@ public class InteractiveSelect : MonoBehaviour
         {
             if (!text.gameObject.activeSelf)
             {
-                Debug.Log("what do you mean?!");
                 text.gameObject.SetActive(true);
             }
         }
@@ -117,7 +116,6 @@ public class InteractiveSelect : MonoBehaviour
     public void NoTarget()
     {
         // lost the target and we hide the indicator
-        Debug.Log("aaaaaaaaaaaaaa?");
         text.gameObject.SetActive(false);
         currentState = State.Initial;
     }

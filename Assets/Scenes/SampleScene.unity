@@ -266,7 +266,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &432064173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -503,7 +503,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   receiver: {fileID: 1057962256}
   confirmAddress: /lift
+  legacyAddress: /confirm
   imageTrackingManager: {fileID: 1346882732}
+  targetHttpSender: {fileID: 0}
+  statusText: {fileID: 0}
   holdSeconds: 1.2
   amplitude: 0.03
   speed: 3
@@ -630,7 +633,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1057962255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -645,7 +648,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   receiver: {fileID: 1057962256}
   confirmAddress: /lift
+  legacyAddress: /confirm
   imageTrackingManager: {fileID: 1346882732}
+  targetHttpSender: {fileID: 0}
+  statusText: {fileID: 0}
   holdSeconds: 1.2
   amplitude: 0.03
   speed: 3
@@ -828,7 +834,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   receiver: {fileID: 1057962256}
   confirmAddress: /lift
+  legacyAddress: /confirm
   imageTrackingManager: {fileID: 1346882732}
+  targetHttpSender: {fileID: 0}
+  statusText: {fileID: 0}
   holdSeconds: 1.2
   amplitude: 0.03
   speed: 3
@@ -849,7 +858,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1832352469
 MonoBehaviour:
   m_ObjectHideFlags: 0
