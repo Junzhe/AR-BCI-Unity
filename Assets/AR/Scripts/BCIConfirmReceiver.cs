@@ -8,9 +8,10 @@ public class BCIConfirmReceiver : MonoBehaviour
     public OSCReceiver receiver;
     public string confirmAddress = "/lift";   // 新版
     public string legacyAddress = "/confirm"; // 兼容旧版
+    public string neutralAddress = "/neutral"; // 取消
 
     [Header("目标管理器")]
-    public ImageTrackingManager imageTrackingManager;
+    public ImageTrackingManager imageManager;
 
     [Header("HTTP 发射器")]
     public TargetHTTPSender targetHttpSender;
@@ -27,6 +28,7 @@ public class BCIConfirmReceiver : MonoBehaviour
     private float holdStart = 0f;
     private float lastActiveTime = -999f;
     private bool active = false;
+    private bool held = false;
     private Vector3 basePos;
 
     private string confirmedTargetName = null;
@@ -39,15 +41,16 @@ public class BCIConfirmReceiver : MonoBehaviour
             return;
         }
 
-        receiver.Bind(confirmAddress, m => HandleLift(m.Values[0].IntValue));
-        receiver.Bind(legacyAddress, HandleLegacy);
+        receiver.Bind(confirmAddress, OnLift);
+        //receiver.Bind(legacyAddress, HandleLegacy);
+        receiver.Bind(neutralAddress, OnCancel);
 
         Debug.Log($"✅ BCIConfirmReceiver 已绑定 {confirmAddress} 和 {legacyAddress}");
     }
 
     void Update()
     {
-        var current = imageTrackingManager?.GetCurrentTargetObject();
+        var current = imageManager?.GetCurrentTargetObject();
         if (current == null) return;
 
         if (basePos == Vector3.zero) basePos = current.transform.localPosition;
@@ -62,28 +65,53 @@ public class BCIConfirmReceiver : MonoBehaviour
         current.transform.localPosition = basePos + new Vector3(0, t, 0);
     }
 
-    void HandleLift(int val)
+    void OnLift(OSCMessage message)
     {
-        var current = imageTrackingManager?.GetCurrentTargetObject();
-        if (current == null) return;
+        // Start To Confirm the Block
+        Handle();
+    }
 
-        if (val == 1)
+    void OnCancel(OSCMessage message)
+    {
+        // cancel the lift and return to the selected state
+        Debug.Log("持续需要中断");
+        ResetFeedback();
+    }
+
+    void Handle()
+    {
+        var current = imageManager?.GetCurrentTargetObject();
+        if (current == null)
         {
-            active = true;
-            lastActiveTime = Time.time;
-
-            if (holdStart == 0f) holdStart = Time.time;
+            // We Lost the block
+            held = false;
+            return;
+        }
+        if (active)
+        {
+            // Start the animation that signals the confirmation
+            imageManager?.PrepareConfirmTarget();
+            if (!held)
+            {
+                held = true;
+                // record current time
+                holdStart = Time.time;
+            }
             else if (Time.time - holdStart >= holdSeconds)
             {
-                ConfirmTarget();
+                // confirm the target
+                imageManager?.ConfirmCurrentTarget();
+                // already made the one-time switch, "re-initialize" everything.
+                held = false;
                 ResetFeedback();
             }
         }
         else
         {
-            CancelTarget();
-            ResetFeedback();
+            // 已取消信号
+            held = false;
         }
+        
     }
 
     void HandleLegacy(OSCMessage message)
@@ -100,10 +128,10 @@ public class BCIConfirmReceiver : MonoBehaviour
 
     void ConfirmTarget()
     {
-        string name = imageTrackingManager?.GetCurrentTargetName();
+        string name = imageManager?.GetCurrentTargetName();
         if (string.IsNullOrEmpty(name)) return;
 
-        imageTrackingManager?.ConfirmCurrentTarget();
+        imageManager?.ConfirmCurrentTarget();
         confirmedTargetName = name;
 
         Debug.Log($"✅ 目标 {name} 已确认，HTTP 一次发送");
@@ -119,10 +147,10 @@ public class BCIConfirmReceiver : MonoBehaviour
 
     void CancelTarget()
     {
-        string name = imageTrackingManager?.GetCurrentTargetName();
+        string name = imageManager?.GetCurrentTargetName();
         if (string.IsNullOrEmpty(name)) return;
 
-        imageTrackingManager?.CancelCurrentTarget();
+        imageManager?.CancelCurrentTarget();
         confirmedTargetName = null;
 
         Debug.Log("⛔ 目标取消确认，不再发送 HTTP");
@@ -134,7 +162,7 @@ public class BCIConfirmReceiver : MonoBehaviour
     {
         active = false;
         holdStart = 0f;
-        var current = imageTrackingManager?.GetCurrentTargetObject();
-        if (current != null) current.transform.localPosition = basePos;
+        // TODO, cancel the animation
+        imageManager?.CancelSwitchTarget();
     }
 }

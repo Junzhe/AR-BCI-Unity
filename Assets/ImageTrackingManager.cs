@@ -66,7 +66,7 @@ public class ImageTrackingManager : MonoBehaviour
         try
         {
             TargetCube currentObj = GetCurrentTargetObject().GetComponent<TargetCube>();
-
+            currentObj.LeaveConfirmedState();
             currentObj.StartWobbing(toRight);
         }
         catch { }
@@ -78,7 +78,7 @@ public class ImageTrackingManager : MonoBehaviour
         try
         {
             TargetCube currentObj = GetCurrentTargetObject().GetComponent<TargetCube>();
-
+            currentObj.LeaveConfirmedState();
             currentObj.StopWobbing();
         }
         catch { }
@@ -112,10 +112,23 @@ public class ImageTrackingManager : MonoBehaviour
         }
     }
 
+    public void PrepareConfirmTarget()
+    {
+        // first get the proper index
+        if (spawnedTargets.Count == 0) return;
+        try
+        {
+            TargetCube currentObj = GetCurrentTargetObject().GetComponent<TargetCube>();
+            currentObj.TryingToConfirm();
+            currentObj.StartWobbing(true);
+        }
+        catch { }
+    }
+
     public void ConfirmCurrentTarget()
     {
         if (string.IsNullOrEmpty(currentTargetName)) return;
-
+        CancelSwitchTarget();
         confirmedTargetName = currentTargetName;
 
         if (spawnedTargets.TryGetValue(currentTargetName, out GameObject target))

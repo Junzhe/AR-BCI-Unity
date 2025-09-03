@@ -10,6 +10,9 @@ public class TargetCube : MonoBehaviour
     private Vector3 dir; // this direction is the direction which the cube wobbs
     private float t;
     int intdir; // debug variable
+
+    private bool isConfirming = false;
+
     Camera cam;
 
     // Start is called before the first frame update
@@ -24,9 +27,21 @@ public class TargetCube : MonoBehaviour
     void Update()
     {
         t = (Mathf.Sin(Time.time * Mathf.PI * 2f / 0.8f) + 1f) / 1.5f; // oscillates
-        //cube.transform.localPosition = dir * 0.15f * t;
-        cube.transform.localPosition = intdir * Vector3.right * 0.15f * t; //debug line
+        cube.transform.localPosition = intdir * GiveAnimationDir() * 0.15f * t;
         //debug();
+    }
+
+    private Vector3 GiveAnimationDir()
+    {
+        // if the cube is going from selected to confirming, it moves up and down, if it's not, it moves sideways.
+        if (isConfirming)
+        {
+            return Vector3.up;
+        }
+        else
+        {
+            return Vector3.right;
+        }
     }
 
     public void ChangeColor(Color color)
@@ -57,14 +72,13 @@ public class TargetCube : MonoBehaviour
     public void StartWobbing(bool isRightDir)
     {
         // wobbing的纯方向性版本重载
+        // 如遇到Confirm，isRightDir也=1，也可以用这个函数
         if (isRightDir)
         {
-            //dir = Vector3.Normalize(-cam.transform.right);
             intdir = 1;
         }
         else
         {
-            //dir = Vector3.Normalize(cam.transform.right);
             intdir = -1;
         }
         
@@ -77,6 +91,16 @@ public class TargetCube : MonoBehaviour
         dir = Vector3.zero;
         //cube.transform.localPosition = Vector3.zero;
         intdir = 0;
+    }
+
+    public void TryingToConfirm()
+    {
+        isConfirming = true;
+    }
+
+    public void LeaveConfirmedState()
+    {
+        isConfirming = false;
     }
 
     public void TextSelected(bool isConfirmed)

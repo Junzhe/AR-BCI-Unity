@@ -77,7 +77,7 @@ public class BCISwitchReceiver : MonoBehaviour
 
         if (currentDir != Direction.None)
         {
-            Debug.LogWarning("A Request is recieved and is being handled");
+            Debug.LogWarning("A Request of confirming this cube is recieved and is being handled");
             // if we have a direction
             imageManager?.PrepareSwitchTarget(dir == Direction.Right);
             if (!held)
